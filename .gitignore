@@ -1,17 +1,6 @@
-# Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
+.pytest_cache/
 .venv/
-venv/
-env/
-
-# IDE / OS
-.vscode/
-.idea/
-.DS_Store
-
-# Project artifacts (recordings, etc.) — remove if you want to commit them
-*.log
+dist/
+*.egg-info/

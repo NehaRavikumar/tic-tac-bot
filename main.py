@@ -1,3 +1,4 @@
+import random
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -37,7 +38,9 @@ if TYPE_CHECKING:
     from lerobot.robots.so_follower import SO101Follower
 
 REPO_ID = "cadenli/tictactoe-draw"  # cadenli/tictactoe-point
-CAM_REPO_ID = "cadenli/tictac-cam"
+CAM_REPO_ID = "cadenli/tictactoe-camera"
+TRASH_REPO_ID = "cadenli/tictactoe-trashtalk"
+NUM_TRASH_EPISODES = 2
 
 CAPTURE_DIR = Path(__file__).resolve().parent / "captures"
 CAPTURE_CAMERA_INDEX = 0
@@ -119,6 +122,13 @@ def draw_at(row: int, col: int, robot: "SO101Follower | None" = None) -> None:
     replay_episode(repo_id=REPO_ID, episode_idx=episode_idx, robot=robot, say=False)
 
 
+def trash_talk(robot: "SO101Follower | None" = None) -> int:
+    """Replay a randomly-chosen trash-talk episode. Returns the episode index used."""
+    episode_idx = random.randrange(NUM_TRASH_EPISODES)
+    replay_episode(repo_id=TRASH_REPO_ID, episode_idx=episode_idx, robot=robot, say=False)
+    return episode_idx
+
+
 def play(row: int, col: int) -> None:
     """Manual single-cell mode (kept for backward compatibility)."""
     if row == -1 and col == -1:
@@ -149,8 +159,9 @@ def play_game(
       2. Capture a frame and ask the vision LLM what's on the board.
       3. If somebody won or the board is full, stop.
       4. If it isn't the robot's turn yet, wait for the human and re-capture.
-      5. Otherwise replay the draw episode for the chosen cell, then wait for
-         the human's next move.
+      5. Replay one of the TRASH_REPO_ID episodes (picked at random) to taunt
+         the human, then replay the draw episode for the chosen cell.
+      6. Wait for the human's next move.
     """
     chosen_mark: Mark | None = robot_mark
 
@@ -204,6 +215,10 @@ def play_game(
                 f"Robot ({move.robot_mark}) plays row={row}, col={col} "
                 f"-> episode {episode_idx}"
             )
+
+            trash_idx = trash_talk(robot=robot)
+            print(f"Trash talk -> {TRASH_REPO_ID} episode {trash_idx}")
+
             draw_at(row, col, robot=robot)
 
             resp = input(

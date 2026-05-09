@@ -9,12 +9,21 @@ from lerobot.utils.visualization_utils import init_rerun
 from lerobot.scripts.lerobot_record import record_loop
 from lerobot.processor import make_default_processors
 
+# --------------- Defaults ---------------
+DEFAULT_DATASET_NAME = "pour-water"
+DEFAULT_TASK_DESCRIPTION = "pouring water"
+DEFAULT_ROBOT_ID = "follower-1"
+# ----------------------------------------
+
 # --------------- Project setup ---------------
 print("=== SO-101 Recording Setup ===\n")
 HF_USER = input("HuggingFace username: ").strip()
-DATASET_NAME = input("Dataset name: ").strip()
+DATASET_NAME = input(f"Dataset name [{DEFAULT_DATASET_NAME}]: ").strip() or DEFAULT_DATASET_NAME
 REPO_ID = f"{HF_USER}/{DATASET_NAME}"
-TASK_DESCRIPTION = input("Task description: ").strip()
+TASK_DESCRIPTION = (
+    input(f"Task description [{DEFAULT_TASK_DESCRIPTION}]: ").strip()
+    or DEFAULT_TASK_DESCRIPTION
+)
 print(f"\nRecording to: {REPO_ID}")
 print(f"Task: {TASK_DESCRIPTION}\n")
 
@@ -41,7 +50,7 @@ camera_config = {
 } if USE_CAMERAS else {}
 
 robot_config = SO101FollowerConfig(
-    id="my_awesome_follower_arm",
+    id=DEFAULT_ROBOT_ID,
     port="/dev/tty.usbmodem5AE60557941",
     disable_torque_on_disconnect=False,
     **({"cameras": camera_config} if USE_CAMERAS else {}),

@@ -7,7 +7,7 @@ from lerobot.utils.utils import log_say
 
 # --------------- Defaults ---------------
 DEFAULT_PORT = "/dev/tty.usbmodem5AE60557941"
-DEFAULT_ROBOT_ID = "my_awesome_follower_arm"
+DEFAULT_ROBOT_ID = "follower-1"
 # ----------------------------------------
 
 

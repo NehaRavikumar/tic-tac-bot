@@ -9,7 +9,7 @@ from typing import Any
 from .board import Mark, MoveResult, next_robot_move, normalize_board
 
 
-DEFAULT_MODEL = "gpt-5.4"
+DEFAULT_MODEL = "gpt-5.5"
 
 
 def parse_board_image(image_path: str | Path, model: str = DEFAULT_MODEL) -> tuple[tuple[str, str, str], ...]:

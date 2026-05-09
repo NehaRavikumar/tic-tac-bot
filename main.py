@@ -1,4 +1,6 @@
 import random
+import subprocess
+import threading
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -37,10 +39,14 @@ from tictac_bot.vision import parse_board_image
 if TYPE_CHECKING:
     from lerobot.robots.so_follower import SO101Follower
 
-REPO_ID = "cadenli/tictactoe-draw"  # cadenli/tictactoe-point
-CAM_REPO_ID = "cadenli/tictactoe-camera"
-TRASH_REPO_ID = "cadenli/tictactoe-trashtalk"
-NUM_TRASH_EPISODES = 2
+REPO_ID = "cadenli/tictactoe-pro"  # cadenli/tictactoe-draw
+CAM_REPO_ID = "cadenli/tictactoe-camera-final"
+TRASH_REPO_ID = "cadenli/tictactoe-trashtalk-finalv2"
+NUM_TRASH_EPISODES = 1
+TRASH_TALK_AUDIO_DIR = _PROJECT_ROOT / "trashtalk"
+TRASH_TALK_AUDIO_EXTENSIONS = {".aac", ".aif", ".aiff", ".m4a", ".mp3", ".wav"}
+TRASH_TALK_AUDIO_DELAY_SEC = 1.0
+_trash_talk_audio_index = 0
 
 CAPTURE_DIR = Path(__file__).resolve().parent / "captures"
 CAPTURE_CAMERA_INDEX = 0
@@ -122,11 +128,51 @@ def draw_at(row: int, col: int, robot: "SO101Follower | None" = None) -> None:
     replay_episode(repo_id=REPO_ID, episode_idx=episode_idx, robot=robot, say=False)
 
 
-def trash_talk(robot: "SO101Follower | None" = None) -> int:
-    """Replay a randomly-chosen trash-talk episode. Returns the episode index used."""
+def _trash_talk_audio_files() -> list[Path]:
+    if not TRASH_TALK_AUDIO_DIR.is_dir():
+        return []
+    return sorted(
+        path
+        for path in TRASH_TALK_AUDIO_DIR.iterdir()
+        if path.is_file() and path.suffix.lower() in TRASH_TALK_AUDIO_EXTENSIONS
+    )
+
+
+def _start_trash_talk_audio() -> Path | None:
+    global _trash_talk_audio_index
+
+    audio_files = _trash_talk_audio_files()
+    if not audio_files:
+        print(f"No trash-talk audio files found in {TRASH_TALK_AUDIO_DIR}")
+        return None
+
+    audio_path = audio_files[_trash_talk_audio_index % len(audio_files)]
+    _trash_talk_audio_index += 1
+
+    def play_audio() -> None:
+        try:
+            subprocess.Popen(
+                ["afplay", str(audio_path)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except FileNotFoundError:
+            print("Warning: 'afplay' not found; skipping trash-talk audio.")
+        except OSError as e:
+            print(f"Warning: could not play trash-talk audio {audio_path.name}: {e}")
+
+    timer = threading.Timer(TRASH_TALK_AUDIO_DELAY_SEC, play_audio)
+    timer.daemon = True
+    timer.start()
+    return audio_path
+
+
+def trash_talk(robot: "SO101Follower | None" = None) -> tuple[int, Path | None]:
+    """Replay a randomly-chosen trash-talk episode with a local audio clip."""
     episode_idx = random.randrange(NUM_TRASH_EPISODES)
+    audio_path = _start_trash_talk_audio()
     replay_episode(repo_id=TRASH_REPO_ID, episode_idx=episode_idx, robot=robot, say=False)
-    return episode_idx
+    return episode_idx, audio_path
 
 
 def play(row: int, col: int) -> None:
@@ -216,8 +262,9 @@ def play_game(
                 f"-> episode {episode_idx}"
             )
 
-            trash_idx = trash_talk(robot=robot)
-            print(f"Trash talk -> {TRASH_REPO_ID} episode {trash_idx}")
+            trash_idx, audio_path = trash_talk(robot=robot)
+            audio_msg = f" + audio {audio_path.name}" if audio_path else ""
+            print(f"Trash talk -> {TRASH_REPO_ID} episode {trash_idx}{audio_msg}")
 
             draw_at(row, col, robot=robot)
 
